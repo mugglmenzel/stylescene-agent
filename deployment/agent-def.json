@@ -1,0 +1,12 @@
+{
+    "displayName": "StyleScene Agent",
+    "description": "An agent to create redressed photo model images in scenery and animated.",
+    "adk_agent_definition": {
+        "tool_settings": {
+            "tool_description": "Generate person and clothing images, redress persons with clothing, restyle a scene with a person, and animate images with a person"
+        },
+        "provisioned_reasoning_engine": {
+            "reasoning_engine": "projects/928871478446/locations/us-central1/reasoningEngines/6473106427694022656"
+        }
+    }
+}

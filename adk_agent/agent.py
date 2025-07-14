@@ -1,8 +1,13 @@
-from google.adk.agents import Agent
-from google.adk.artifacts import InMemoryArtifactService
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
+from dotenv import load_dotenv
 
+load_dotenv()
+
+from google.adk.agents import Agent
+from google.adk.artifacts import GcsArtifactService
+from google.adk.sessions import VertexAiSessionService
+from google.adk.runners import Runner
+
+from .callbacks import artifacts_augmentation_callback
 from .tools import (generate_clothing, generate_person, generate_redress,
                     store_user_content_artifacts)
 
@@ -21,14 +26,14 @@ root_agent = Agent(
         generate_clothing,
         generate_redress,
     ],
+    output_key="output",
+    # before_model_callback=artifacts_augmentation_callback,
 )
 
-artifact_service = InMemoryArtifactService()
-session_service = InMemorySessionService()
 
-runner = Runner(
-    agent=root_agent,
-    app_name="stylescene_agent_app",
-    session_service=session_service,
-    artifact_service=artifact_service,
-)
+def artifact_service_builder():
+    print("artifact_service_builder")
+    return GcsArtifactService(
+        bucket_name="sandbox-michael-menzel-adk-staging-us-central1"
+    )
+session_service_builder = lambda: VertexAiSessionService()

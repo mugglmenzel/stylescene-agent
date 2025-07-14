@@ -13,10 +13,11 @@ gcp_location = genai_client._api_client.location
 aiplatform.init()
 
 
-def _generated_image_to_part(image: types.GeneratedImage) -> types.Part:
+async def _generated_image_to_part(image: types.GeneratedImage) -> types.Part:
     return types.Part.from_bytes(
         data=image.image.image_bytes, mime_type=image.image.mime_type
     )
+
 
 async def store_user_content_artifacts(tool_context: ToolContext) -> dict:
     """
@@ -28,19 +29,18 @@ async def store_user_content_artifacts(tool_context: ToolContext) -> dict:
             artifact_id = f"artifact_{uuid.uuid4()}"
             await tool_context.save_artifact(artifact_id, part)
             artifacts.append(artifact_id)
-    return {
-        "artifacts": artifacts
-    }
+    return {"artifacts": artifacts}
 
 
 async def generate_person(person_description: str, tool_context: ToolContext) -> dict:
+    print("tool_context", vars(tool_context))
     response = genai_client.models.generate_images(
         model="imagen-4.0-fast-generate-preview-06-06",
         prompt=f"Generate a photorealistic, full-body image of a person on a plain white background, suitable for use in a virtual try-on application. The person should be the main focus. Person description: {person_description}",
         config=types.GenerateImagesConfig(number_of_images=1),
     )
     person_image = response.generated_images[0]
-    person_image_part = _generated_image_to_part(person_image)
+    person_image_part = await _generated_image_to_part(person_image)
     await tool_context.save_artifact("person.image", person_image_part)
     return {
         "status": "success",
@@ -58,7 +58,7 @@ async def generate_clothing(
         config=types.GenerateImagesConfig(number_of_images=1),
     )
     clothing_image = response.generated_images[0]
-    clothing_image_part = _generated_image_to_part(clothing_image)
+    clothing_image_part = await _generated_image_to_part(clothing_image)
     await tool_context.save_artifact("clothing.image", clothing_image_part)
     return {
         "status": "success",
@@ -70,6 +70,7 @@ async def generate_clothing(
 async def generate_redress(
     person_image_artifact: str, clothing_image_artifact: str, tool_context: ToolContext
 ) -> dict:
+    print("tool_context", vars(tool_context))
     person_image: types.Part = await tool_context.load_artifact(person_image_artifact)
     clothing_image: types.Part = await tool_context.load_artifact(
         clothing_image_artifact
@@ -111,4 +112,45 @@ async def generate_redress(
         "status": "success",
         "message": "Image 'redress.image' successfully generated.",
         "artifact_name": "redress.image",
+    }
+
+
+async def generate_scene_background(
+    person_image_artifact: str, scene_description: str, tool_context: ToolContext
+) -> dict:
+    person_image: types.Part = await tool_context.load_artifact(person_image_artifact)
+
+    reference_image = types.RawReferenceImage(
+        referenceId=0,
+        referenceImage=types.Image(
+            imageBytes=person_image.inline_data.data,
+            mime_type=person_image.inline_data.mime_type,
+        ),
+    )
+    mask_image = types.MaskReferenceImage(
+        reference_id=1,
+        config=types.MaskReferenceConfig(
+            mask_mode=types.MaskReferenceMode.MASK_MODE_BACKGROUND
+        ),
+    )
+
+    response = genai_client.models.edit_image(
+        model="imagen-3.0-capability-001",
+        prompt=f"Generate a photorealistic image of the person [0] from the reference image in this scene: {scene_description}. The final image should be a coherent and high-quality photograph.",
+        reference_images=[reference_image, mask_image],
+        config=types.EditImageConfig(
+            aspect_ratio="16:9",
+            number_of_images=1,
+            edit_mode=types.EditMode.EDIT_MODE_BGSWAP,
+        ),
+    )
+
+    scene_image = response.generated_images[0]
+    scene_image_part = await _generated_image_to_part(scene_image)
+    await tool_context.save_artifact("scene.image", scene_image_part)
+
+    return {
+        "status": "success",
+        "message": "Image 'scene.image' successfully generated.",
+        "artifact_name": "scene.image",
     }
