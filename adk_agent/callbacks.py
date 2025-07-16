@@ -1,3 +1,5 @@
+import os
+
 from google.adk.agents.llm_agent import CallbackContext
 from google.adk.models.llm_request import LlmRequest
 from google.genai import types
@@ -7,9 +9,6 @@ async def artifacts_augmentation_callback(callback_context: CallbackContext, llm
     invocation_context = (
         callback_context._invocation_context
     )  # pylint: disable=protected-access
-    print("invocation context:", invocation_context)
-    print("user content:", callback_context.user_content)
-    print("state:", vars(callback_context.state))
     if invocation_context.artifact_service is not None:
 
         filenames = await invocation_context.artifact_service.list_artifact_keys(
@@ -19,7 +18,7 @@ async def artifacts_augmentation_callback(callback_context: CallbackContext, llm
         )
 
         llm_request.contents[-1].parts.append(
-            types.Part.from_text(text=f"Attached artifacts: {filenames}")
+            types.Part.from_text(text=f"Attached images stored as artifacts: {filenames}")
         )
         print(f"Attached artifacts: {filenames}")
     return None

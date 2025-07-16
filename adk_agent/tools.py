@@ -33,7 +33,6 @@ async def store_user_content_artifacts(tool_context: ToolContext) -> dict:
 
 
 async def generate_person(person_description: str, tool_context: ToolContext) -> dict:
-    print("tool_context", vars(tool_context))
     response = genai_client.models.generate_images(
         model="imagen-4.0-fast-generate-preview-06-06",
         prompt=f"Generate a photorealistic, full-body image of a person on a plain white background, suitable for use in a virtual try-on application. The person should be the main focus. Person description: {person_description}",

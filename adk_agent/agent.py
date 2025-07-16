@@ -8,8 +8,12 @@ from google.adk.sessions import VertexAiSessionService
 from google.adk.runners import Runner
 
 from .callbacks import artifacts_augmentation_callback
-from .tools import (generate_clothing, generate_person, generate_redress,
-                    store_user_content_artifacts)
+from .tools import (
+    generate_clothing,
+    generate_person,
+    generate_redress,
+    store_user_content_artifacts,
+)
 
 root_agent = Agent(
     name="stylescene_agent",
@@ -27,13 +31,11 @@ root_agent = Agent(
         generate_redress,
     ],
     output_key="output",
-    # before_model_callback=artifacts_augmentation_callback,
+    before_model_callback=artifacts_augmentation_callback,
 )
 
 
-def artifact_service_builder():
-    print("artifact_service_builder")
-    return GcsArtifactService(
-        bucket_name="sandbox-michael-menzel-adk-staging-us-central1"
-    )
+artifact_service_builder = lambda: GcsArtifactService(
+    bucket_name="sandbox-michael-menzel-adk-staging-us-central1"
+)
 session_service_builder = lambda: VertexAiSessionService()

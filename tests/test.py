@@ -26,12 +26,6 @@ def _parse_args():
         default=None,
         help="The resource name of the Reasoning Engine.",
     )
-    parser.add_argument(
-        "--gcs-dir-name",
-        type=str,
-        default="adk_agent",
-        help="The GCS directory name for the agent.",
-    )
     args = parser.parse_args()
     return args
 
@@ -78,33 +72,17 @@ async def main():
         enable_tracing=True,
         env_vars=env_vars,
     )
-
+    
     existing_agents = list(agent_engines.list(filter=f'display_name="{agent_name}"'))
-    print("Deploying StyleScene Agent...")
-    if args.resource_name is None and len(existing_agents) == 0:
-        remote_app = agent_engines.create(
-            display_name=agent_name,
-            agent_engine=app,
-            gcs_dir_name=args.gcs_dir_name,
-            requirements="deployment/agent-requirements.txt",
-            extra_packages=["./adk_agent"],
-            env_vars=env_vars,
-        )
-    else:
-        agent_resource = args.resource_name or existing_agents[0].resource_name
-        await _test_agent(app, agent_resource)
-        remote_app = agent_engines.update(
-            resource_name=agent_resource,
-            display_name=agent_name,
-            agent_engine=app,
-            gcs_dir_name=args.gcs_dir_name,
-            requirements="deployment/agent-requirements.txt",
-            extra_packages=["./adk_agent"],
-            env_vars=env_vars,
-        )
-        await _test_agent(remote_app, agent_resource)
-
-    print("\n=== Deployment successful! ===")
+    agent_resource = args.resource_name or existing_agents[0].resource_name
+    
+    print("Testing StyleScene Agent...")
+    print("Running local agent test...")
+    await _test_agent(app, agent_resource)
+    print("Running remote agent test...")
+    await _test_agent(agent_engines.get(resource_name=agent_resource), agent_resource)
+    
+    print("\n=== Testing completed! ===")
 
 
 if __name__ == "__main__":
